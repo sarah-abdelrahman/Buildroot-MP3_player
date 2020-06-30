@@ -1,0 +1,10 @@
+#!/bin/sh
+echo 0 > /myApplications/playState #write 0 in PlayState file
+numberOfTracks=$(wc -l < /grepMP3) # get the length of the playlist 
+while [ $numberOfTracks -eq 0 ] #check that it didn't get a false reading  of playlist length
+do
+	numberOfTracks=$(wc -l < /grepMP3) #try again getting the length of playlist
+done
+echo $(($RANDOM% $numberOfTracks)) > /myApplications/trackNumberFile #get a random number between 0 and lenght of playlist
+killall  mpg123 #kill the running mpg123 proccess
+echo 1 > /myApplications/playState #write 0 in PlayState file

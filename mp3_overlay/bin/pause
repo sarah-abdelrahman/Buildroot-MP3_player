@@ -1,0 +1,3 @@
+#!/bin/sh
+echo 0 > /myApplications/playState #write 0 to playState file 
+kill -19 $(pidof mpg123)  #send stop signal to mpg123 process

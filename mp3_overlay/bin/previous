@@ -1,0 +1,14 @@
+#!/bin/sh
+echo 0 > /myApplications/playState
+currentTrack=$(cat /myApplications/trackNumberFile) #get the current track index from trackNumberFile and save it in variable
+killall  mpg123 # kill all mpg123 signals
+sleep 0.1
+if [ $currentTrack -eq 1 ]; then #check if the current track is the first one in list 
+	# if True :
+	echo $(wc -l < /grepMP3) > /myApplications/trackNumberFile  # write in trackNumberFile the index of the last track in playlist
+	echo 1 > /myApplications/playState #write 1 in playState file
+else #if false
+	currentTrack=`expr $currentTrack - 1` #decrement 1 from currentTrack which represents the index of the played song
+	echo $currentTrack > /myApplications/trackNumberFile #write the value of currentTrack in trackNumberFile
+	echo 1 > /myApplications/playState #write 1 in playState file
+fi
