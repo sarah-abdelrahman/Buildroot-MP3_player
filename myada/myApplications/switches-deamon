@@ -1,0 +1,97 @@
+#!/bin/sh
+
+cd /myApplications
+
+currentTrack=1
+
+echo $currentTrack > trackNumberFile
+echo 0 > playState
+
+if [ ! -d /sys/class/gpio/gpio22 ]; then # check if the gpio pin is not configured 
+	#if true configure pause/play button as input
+	echo "22" > /sys/class/gpio/export
+	echo "in" > /sys/class/gpio/gpio22/direction
+fi
+
+if [ ! -d /sys/class/gpio/gpio23 ]; then #next
+	echo "23" > /sys/class/gpio/export
+	echo "in" > /sys/class/gpio/gpio23/direction
+fi
+
+if [ ! -d /sys/class/gpio/gpio24 ]; then #previous
+	echo "24" > /sys/class/gpio/export
+	echo "in" > /sys/class/gpio/gpio24/direction
+fi
+
+if [ ! -d /sys/class/gpio/gpio25 ]; then #shuffle
+        echo "25" > /sys/class/gpio/export
+        echo "in" > /sys/class/gpio/gpio25/direction
+fi
+
+while :
+do
+	#pause/play
+	if [ $(cat /sys/class/gpio/gpio22/value) -eq 1 ]; then #check for input value if equals 1
+		if [ $(cat playState) -eq 0 ]; then #check if the playState file if equals 0 means the song was paused
+			#if true write 1 to playstate file to indicate music-daemon script to continue
+			echo 1 > playState 
+			echo 0 > pauseFile # write in pauseFile 0 to indicate terminalmsgs its not paused 
+			kill -18 $(pidof mpg123) #send continue signal to mpg123 process
+			sleep 0.4
+		else
+			echo 0 > playState #if false write 0 to playstate file to indicate music-daemon script to stop working
+			echo 1 > pauseFile # write in pauseFile 1 to indicate terminalmsgs its paused
+			kill -19 $(pidof mpg123) #send stop signal to mpg123 process
+			sleep 0.4
+		fi
+	fi
+	if [ $(cat /sys/class/gpio/gpio23/value) -eq 1 -a $(cat playState) -eq 1 ]; then #next
+			killall  mpg123 #send kill signal to all mpg123 processes to end the playing song then the music deamon will play the next one
+			sleep 0.4
+	fi
+	
+	if [ $(cat /sys/class/gpio/gpio25/value) -eq 1 -a $(cat playState) -eq 1 ]; then #SHUFFLE
+		echo 0 > playState
+		numberOfTracks=$(wc -l < /grepMP3) #get the langth of playlist
+		while [ $numberOfTracks -eq 0 ]  #make sure the length is right 
+		do
+			numberOfTracks=$(wc -l < /grepMP3) # if the length didn't get right check the length again
+		done
+		echo $(($RANDOM% $numberOfTracks)) > trackNumberFile #get a random number between 0 and the length of playlist
+		killall  mpg123 #stop el current playing song
+		echo 1 > playState 
+		sleep 0.4
+	fi
+	
+	if [ $(cat /sys/class/gpio/gpio24/value) -eq 1 -a $(cat playState) -eq 1 ]; then #prev/repeat
+		echo 0 > playState
+		currentTrack=$(cat trackNumberFile) #save the index of current song
+		killall mpg123 #kill the song process
+		sleep 0.05
+		while [ $(cat /sys/class/gpio/gpio24/value) -eq 1 ] #wait until the user release the button
+		do	
+			:	
+		done
+		sleep 0.05
+		prevFlag=$(cat prevFlagFile) #read the prevFlagFile that contains number of presses within 1 second
+		prevFlag=`expr $prevFlag + 1` #increment the counter and update the file
+		echo $prevFlag > prevFlagFile
+		
+		if [ $prevFlag -ge 2 ]; then #check if its the first press or more than 1
+			#if more than 1 press then play the previous song
+			if [ $currentTrack -eq 1 ]; then
+				echo $(wc -l < /grepMP3) > trackNumberFile
+				echo 1 > playState
+			else
+				currentTrack=`expr $currentTrack - 1`
+				echo $currentTrack > trackNumberFile
+				echo 1 > playState
+			fi
+		else
+			#if its the first press play the same song
+			echo $currentTrack > trackNumberFile
+			./clearFlagFile & #run a script that waits fo 1 second then clears the prevFlagFile that indicates number of presses
+			echo 1 > playState
+		fi
+	fi
+done

@@ -1,0 +1,28 @@
+#!/bin/sh
+
+
+while :
+do
+	var1=$(wc -l < /grepMP3)
+	sleep 0.2
+	var2=$(wc -l < /grepMP3)
+	sleep 0.2
+	var3=$(wc -l < /grepMP3)
+	sleep 0.2
+	var4=$(wc -l < /grepMP3)
+	sleep 0.2
+	var5=$(wc -l < /grepMP3)
+	sleep 0.2
+	if [ $var1 -eq 0 -a $var2 -eq 0 -a $var3 -eq 0 -a $var4 -eq 0 -a $var5 -eq 0 ]; then
+		echo no .MP3 file found
+	else
+		if [ $(cat /myApplications/playState) -eq 1 -a $(cat /myApplications/pauseFile) -eq 0 ]; then
+			trackname=$(basename $(awk "NR==$(cat /myApplications/trackNumberFile)" /grepMP3))	
+			echo MP3 Playing  $trackname Via [audio device name]	
+		fi
+		if [ $(cat /myApplications/pauseFile) -eq 1 ]; then
+			trackname=$(basename $(awk "NR==$(cat /myApplications/trackNumberFile)" /grepMP3))	
+		#	echo MP3 Paused $trackname
+		fi
+	fi
+done

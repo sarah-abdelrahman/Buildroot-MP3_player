@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sleep 1
+echo 0 > prevFlagFile  #after 1 second write 0 to the prevFlagFile

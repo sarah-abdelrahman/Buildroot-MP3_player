@@ -1,0 +1,21 @@
+#!/bin/sh
+
+cd /myApplications
+
+while :
+do
+	if [ $(cat playState) -eq 1 ]; then #check the flag of play state
+		cd / #change directory to where the files of are
+		mpg123 $(awk "NR==$(cat /myApplications/trackNumberFile)" /grepMP3) #play the song by grepping the line which contains elsong path and use it with command mpg123
+		cd /myApplications
+		if [ $(cat trackNumberFile) -lt $(wc -l < /grepMP3) ]; then #check if it's in range of playlist
+#if true update the current track to the next track
+			currentTrack=$(cat trackNumberFile)
+			currentTrack=`expr $currentTrack + 1`
+			echo $currentTrack > trackNumberFile
+		else
+#if false this means you hit the last song so star over from song 1
+			echo 1 > trackNumberFile
+		fi
+	fi
+done

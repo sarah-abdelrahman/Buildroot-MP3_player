@@ -1,0 +1,32 @@
+#!/bin/sh
+
+set -e
+
+cd ~/.. #change directory to root
+
+while true; do
+  #using tree to search for all .MP3 or .mp3 files and redirect the output to pipeMP3 file then use && to run next command in sequence 
+  # then use grep to get only .mp3 files path in each line
+  tree -P *.mp3 -f -n --ignore-case -i > pipeMP3 && grep ".mp3" pipeMP3 > grepMP3  
+  sleep 0.1
+  ls -1 /media > /myDevices #list all directories in /media usnig -1 option to list each directory in new line
+  i=1
+  while [ $i -le $(wc -l < /myDevices) ]; do	#looping on each directory in /media
+  	if [ -d $(ls /media/$(awk "NR==$i" /myDevices)) ]; then # check if the directory is empty
+		umount /media/$(awk "NR==$i" /myDevices) #if true unmout the directory
+		rmdir /media/$(awk "NR==$i" /myDevices) #then remove the directory
+		espeak "fe flasha etshalet" --stdout|aplay  #play an audio notification indicates that this media device is removed 
+	fi
+	i=`expr $i + 1`
+  done
+  if ! df | grep -q "/dev/sd"; then # check there is a storage devices 
+      partitions="$(fdisk -l /dev/sd* | grep -v 'Unknown' | awk '/^\/dev\/sd/ {print $1}')" # list all unmounted devices 
+      for partition in $partitions; do #loop on unmounted devices  saved in partition variable
+          mountpoint="/media/$(basename $partition)" 
+          mkdir -p $mountpoint #make directory as mounting point
+          mount $partition $mountpoint #mount the device in the created directory
+	  espeak "fe flasha inserted" --stdout|aplay #play an audio notification indicates that this media device is inserted and mounted 
+      done
+  fi
+
+done
