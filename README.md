@@ -21,4 +21,4 @@ Porpose of each script is documented in documentation file.
 Each feature is presented with screenshots in socumentation file.
 
 A full demo is presented in this video
-https://www.youtube.com/watch?v=905FsyivTM8&t=155s&ab_channel=YoussefKamal
+https://youtu.be/v4xk1LWNGzg
